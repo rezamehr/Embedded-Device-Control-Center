@@ -10,7 +10,8 @@ Device::Device(const DeviceInfo &info,
     , m_comm(communication)
 {
     if (m_comm) {
-        m_comm->setParent(this);   // ownership
+        // Take ownership
+        m_comm->setParent(this);
 
         connect(m_comm, &ICommunication::stateChanged,
                 this, &Device::onCommStateChanged);
@@ -26,13 +27,26 @@ Device::~Device()
     disconnectFromDevice();
 }
 
-QString Device::id() const { return m_info.id; }
-QString Device::name() const { return m_info.name; }
-QString Device::description() const { return m_info.description; }
+QString Device::id() const
+{
+    return m_info.id;
+}
+
+QString Device::name() const
+{
+    return m_info.name;
+}
+
+QString Device::description() const
+{
+    return m_info.description;
+}
 
 bool Device::connectToDevice()
 {
-    if (!m_comm) return false;
+    if (!m_comm)
+        return false;
+
     return m_comm->open();
 }
 
@@ -55,8 +69,15 @@ ConnectionState Device::state() const
 
 qint64 Device::send(const QByteArray &data)
 {
-    if (!m_comm || !isConnected()) return -1;
+    if (!m_comm || !isConnected())
+        return -1;
+
     return m_comm->send(data);
+}
+
+DeviceInfo Device::info() const
+{
+    return m_info;
 }
 
 void Device::onCommStateChanged(ConnectionState state)
