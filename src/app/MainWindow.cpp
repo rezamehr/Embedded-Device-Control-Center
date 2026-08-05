@@ -57,6 +57,11 @@ MainWindow::MainWindow(QWidget *parent)
                         .arg(timestamp, color, prefix, message.toHtmlEscaped())
                     );
             });
+    // Load previously saved devices
+    const int loaded = m_deviceManager->loadFromConfig();
+    if (loaded > 0) {
+        Logger::instance().info(QString("Loaded %1 device(s) from config").arg(loaded));
+    }
 
     setWindowTitle("Embedded Device Control Center");
     resize(1100, 700);
@@ -244,16 +249,30 @@ void MainWindow::onAddDeviceClicked()
 
     DeviceInfo info;
     info.name = comm->name();
-    info.description = (m_typeCombo->currentIndex() == 0) ? "Serial Device" : "TCP Device";
+
+    if (m_typeCombo->currentIndex() == 0) {
+        // Serial
+        info.type = "serial";
+        info.portName = m_portCombo->currentData().toString();
+        info.baudRate = m_baudCombo->currentText().toInt();
+        info.description = "Serial Device";
+    } else {
+        // TCP
+        info.type = "tcp";
+        info.host = m_hostEdit->text().trimmed();
+        info.port = static_cast<quint16>(m_portSpin->value());
+        info.description = "TCP Device";
+    }
 
     QString id = m_deviceManager->addDevice(info, comm);
     if (id.isEmpty()) {
         delete comm;
-        QMessageBox::warning(this, "Error", "Failed to add device.");
+        Logger::instance().error("Failed to add device");
         return;
     }
 
-    //appendLog("Device added: " + id + " (" + info.name + ")", "#3fb950");
+    // Persist immediately
+    m_deviceManager->saveToConfig();
     Logger::instance().info("Device added: " + info.name, id);
 }
 
@@ -381,6 +400,7 @@ void MainWindow::onDeviceAdded(const QString &id)
     m_deviceList->setCurrentItem(item);
 
     updateDeviceListItem(id);
+    m_deviceManager->saveToConfig();
 }
 
 void MainWindow::onDeviceRemoved(const QString &id)
@@ -396,7 +416,7 @@ void MainWindow::onDeviceRemoved(const QString &id)
     if (m_currentDeviceId == id) {
         m_currentDeviceId.clear();
     }
-
+    m_deviceManager->saveToConfig();
     //appendLog("Device removed: " + id, "#f85149");
     Logger::instance().info("Device removed", id);
 }
