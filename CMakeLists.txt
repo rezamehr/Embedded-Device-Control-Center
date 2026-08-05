@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.21)
 
 project(EDCC
-    VERSION 0.1.0
+    VERSION 0.1.2
     DESCRIPTION "Embedded Device Control Center"
     LANGUAGES CXX
 )
