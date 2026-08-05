@@ -54,3 +54,14 @@ git clone https://github.com/rezamehr/Embedded-Device-Control-Center.git
 cd Embedded-Device-Control-Center
 cmake -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build
+
+Project Status
+Current Version: 0.1.0-dev (Foundation)
+This project is under active development.
+
+License
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+Author
+Reza Mehr
+Embedded Systems Engineer
