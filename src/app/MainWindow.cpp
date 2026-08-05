@@ -31,12 +31,47 @@ MainWindow::MainWindow(QWidget *parent)
     connect(m_deviceManager, &DeviceManager::deviceError,
             this, &MainWindow::onDeviceError);
 
+    // Connect the central logger to the UI log view
+    connect(&Logger::instance(), &Logger::logMessage,
+            this, [this](LogLevel level,
+                   const QString &timestamp,
+                   const QString &source,
+                   const QString &message)
+            {
+                QString color;
+                switch (level) {
+                case LogLevel::Debug:    color = "#8b949e"; break;  // gray
+                case LogLevel::Info:     color = "#e6edf3"; break;  // almost white
+                case LogLevel::Warning:  color = "#ffa657"; break;  // orange
+                case LogLevel::Error:    color = "#f85149"; break;  // red
+                case LogLevel::Critical: color = "#ff7b72"; break;  // bright red
+                }
+
+                QString prefix = source.isEmpty()
+                                     ? QString()
+                                     : QString("[%1] ").arg(source);
+
+                m_logView->append(
+                    QString("<span style='color:gray;'>[%1]</span> "
+                            "<span style='color:%2;'>%3%4</span>")
+                        .arg(timestamp, color, prefix, message.toHtmlEscaped())
+                    );
+            });
+
     setWindowTitle("Embedded Device Control Center");
     resize(1100, 700);
 }
 
 MainWindow::~MainWindow()
 {
+    // 1. Disconnect all signals from DeviceManager to this window first
+    if (m_deviceManager) {
+        disconnect(m_deviceManager, nullptr, this, nullptr);
+        m_deviceManager->disconnectAll();   // disconnect all devices
+        m_deviceManager->removeAll();       // remove and delete all devices
+    }
+
+    // 2. Clear any temporary connection
     clearCurrentConnection();
 }
 
@@ -218,7 +253,8 @@ void MainWindow::onAddDeviceClicked()
         return;
     }
 
-    appendLog("Device added: " + id + " (" + info.name + ")", "#3fb950");
+    //appendLog("Device added: " + id + " (" + info.name + ")", "#3fb950");
+    Logger::instance().info("Device added: " + info.name, id);
 }
 
 void MainWindow::onRemoveDeviceClicked()
@@ -238,17 +274,25 @@ void MainWindow::onDeviceSelected()
     auto *item = m_deviceList->currentItem();
     if (!item) {
         m_currentDeviceId.clear();
+        m_btnConnect->setEnabled(false);
         return;
     }
     m_currentDeviceId = item->data(Qt::UserRole).toString();
+    m_btnConnect->setEnabled(true);
+
+    Device *dev = m_deviceManager->device(m_currentDeviceId);
+    if (dev) {
+        setConnectedState(dev->isConnected());
+    }
+
     updateStatusLabel();
 }
 
 void MainWindow::onConnectClicked()
 {
     if (m_currentDeviceId.isEmpty()) {
-        QMessageBox::information(this, "Info", "Please select a device from the list first.\n"
-                                               "Use 'Add Device' to register a new device.");
+        QMessageBox::information(this, "Info",
+                                 "Please select a device from the list first.");
         return;
     }
 
@@ -258,7 +302,8 @@ void MainWindow::onConnectClicked()
     if (dev->isConnected()) {
         dev->disconnectFromDevice();
     } else {
-        appendLog("Connecting " + m_currentDeviceId + " ...", "#aaaaaa");
+       // appendLog("Connecting " + m_currentDeviceId + " ...", "#aaaaaa");
+        Logger::instance().info("Connecting...", m_currentDeviceId);
         dev->connectToDevice();
     }
 }
@@ -272,7 +317,8 @@ void MainWindow::onSendClicked()
 
     Device *dev = m_deviceManager->device(m_currentDeviceId);
     if (!dev || !dev->isConnected()) {
-        appendLog("Device is not connected", "#f85149");
+        //appendLog("Device is not connected", "#f85149");
+        Logger::instance().error("Device is not connected");
         return;
     }
 
@@ -284,7 +330,8 @@ void MainWindow::onSendClicked()
 
     if (written > 0) {
         m_txBytes += written;
-        appendLog(QString("[%1] TX: %2").arg(m_currentDeviceId, text), "#3fb950");
+        //appendLog(QString("[%1] TX: %2").arg(m_currentDeviceId, text), "#3fb950");
+        Logger::instance().info("TX: " + text, m_currentDeviceId);
         updateStatusLabel();
         m_sendEdit->clear();
     }
@@ -313,9 +360,11 @@ void MainWindow::onSaveLogClicked()
     if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
         QTextStream out(&file);
         out << m_logView->toPlainText();
-        appendLog("Log saved to " + fileName, "#3fb950");
+       // appendLog("Log saved to " + fileName, "#3fb950");
+        Logger::instance().info("Log saved to " + fileName);
     } else {
-        appendLog("Failed to save log", "#f85149");
+        //appendLog("Failed to save log", "#f85149");
+        Logger::instance().error("Failed to save log");
     }
 }
 
@@ -326,10 +375,12 @@ void MainWindow::onDeviceAdded(const QString &id)
     Device *dev = m_deviceManager->device(id);
     if (!dev) return;
 
-    auto *item = new QListWidgetItem(dev->name() + "  [" + id + "]");
+    auto *item = new QListWidgetItem();
     item->setData(Qt::UserRole, id);
     m_deviceList->addItem(item);
     m_deviceList->setCurrentItem(item);
+
+    updateDeviceListItem(id);
 }
 
 void MainWindow::onDeviceRemoved(const QString &id)
@@ -346,7 +397,8 @@ void MainWindow::onDeviceRemoved(const QString &id)
         m_currentDeviceId.clear();
     }
 
-    appendLog("Device removed: " + id, "#f85149");
+    //appendLog("Device removed: " + id, "#f85149");
+    Logger::instance().info("Device removed", id);
 }
 
 void MainWindow::onDeviceStateChanged(const QString &id, ConnectionState state)
@@ -356,27 +408,33 @@ void MainWindow::onDeviceStateChanged(const QString &id, ConnectionState state)
 
     switch (state) {
     case ConnectionState::Connected:
-        msg = "Connected";
-        color = "#3fb950";
+        // msg = "Connected";
+        // color = "#3fb950";
+        Logger::instance().info("Connected", id);
         setConnectedState(true);
         break;
     case ConnectionState::Disconnected:
-        msg = "Disconnected";
-        color = "#f85149";
+        // msg = "Disconnected";
+        // color = "#f85149";
+        Logger::instance().info("Disconnected", id);
         setConnectedState(false);
         break;
     case ConnectionState::Connecting:
-        msg = "Connecting...";
-        color = "#aaaaaa";
+        // msg = "Connecting...";
+        // color = "#aaaaaa";
+        Logger::instance().debug("Connecting...", id);
         break;
     case ConnectionState::Error:
-        msg = "Error";
-        color = "#f85149";
+        // msg = "Error";
+        // color = "#f85149";
+        Logger::instance().error("Connection error", id);
         setConnectedState(false);
         break;
     }
 
-    appendLog(QString("[%1] %2").arg(id, msg), color);
+    //appendLog(QString("[%1] %2").arg(id, msg), color);
+
+    updateDeviceListItem(id);
     updateStatusLabel();
 }
 
@@ -386,13 +444,39 @@ void MainWindow::onDeviceDataReceived(const QString &id, const QByteArray &data)
     if (text.isEmpty()) return;
 
     m_rxBytes += data.size();
-    appendLog(QString("[%1] RX: %2").arg(id, text), "#58a6ff");
+    //appendLog(QString("[%1] RX: %2").arg(id, text), "#58a6ff");
+    Logger::instance().info("RX: " + text, id);
     updateStatusLabel();
+}
+
+void MainWindow::updateDeviceListItem(const QString &id)
+{
+    Device *dev = m_deviceManager->device(id);
+    if (!dev) return;
+
+    for (int i = 0; i < m_deviceList->count(); ++i) {
+        QListWidgetItem *item = m_deviceList->item(i);
+        if (item->data(Qt::UserRole).toString() == id) {
+            QString status = dev->isConnected() ? "● Connected" : "○ Disconnected";
+            QString text = QString("%1  [%2]  %3")
+                               .arg(dev->name(), id, status);
+
+            item->setText(text);
+
+            if (dev->isConnected()) {
+                item->setForeground(QBrush(QColor("#3fb950"))); // green
+            } else {
+                item->setForeground(QBrush(QColor("#aaaaaa"))); // gray
+            }
+            break;
+        }
+    }
 }
 
 void MainWindow::onDeviceError(const QString &id, const QString &error)
 {
-    appendLog(QString("[%1] Error: %2").arg(id, error), "#f85149");
+    //appendLog(QString("[%1] Error: %2").arg(id, error), "#f85149");
+    Logger::instance().error(error, id);
 }
 
 // ==================== Helpers ====================
@@ -404,14 +488,14 @@ void MainWindow::setConnectedState(bool connected)
     m_sendEdit->setEnabled(connected);
 }
 
-void MainWindow::appendLog(const QString &text, const QString &color)
-{
-    QString time = QDateTime::currentDateTime().toString("hh:mm:ss.zzz");
-    m_logView->append(
-        QString("<span style='color:gray;'>[%1]</span> <span style='color:%2;'>%3</span>")
-            .arg(time, color, text.toHtmlEscaped())
-    );
-}
+// void MainWindow::appendLog(const QString &text, const QString &color)
+// {
+//     QString time = QDateTime::currentDateTime().toString("hh:mm:ss.zzz");
+//     m_logView->append(
+//         QString("<span style='color:gray;'>[%1]</span> <span style='color:%2;'>%3</span>")
+//             .arg(time, color, text.toHtmlEscaped())
+//     );
+// }
 
 void MainWindow::updateStatusLabel()
 {
