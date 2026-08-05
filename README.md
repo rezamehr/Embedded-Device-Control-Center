@@ -63,5 +63,5 @@ License
 This project is licensed under the MIT License - see the LICENSE file for details.
 
 Author
-Reza Mehr
+Reza Mehrabani
 Embedded Systems Engineer
