@@ -2,6 +2,10 @@
 #include <QSerialPortInfo>
 #include <QMessageBox>
 
+#include <QDateTime>
+#include <QFileDialog>
+#include <QFile>
+
 namespace edcc {
 
 MainWindow::MainWindow(QWidget *parent)
@@ -50,6 +54,9 @@ void MainWindow::setupUi()
     serialLayout->addWidget(m_baudCombo);
     serialLayout->addWidget(m_btnRefresh);
 
+    m_btnClear = new QPushButton("Clear");
+    m_btnSaveLog = new QPushButton("Save Log");
+
     // TCP controls
     m_tcpControls = new QWidget();
     auto *tcpLayout = new QHBoxLayout(m_tcpControls);
@@ -73,10 +80,17 @@ void MainWindow::setupUi()
     topLayout->addWidget(m_tcpControls, 1);
     topLayout->addWidget(m_btnConnect);
 
+    auto *toolLayout = new QHBoxLayout();
+    toolLayout->addStretch();
+    toolLayout->addWidget(m_btnClear);
+    toolLayout->addWidget(m_btnSaveLog);
+
     // Log
     m_logView = new QTextEdit();
     m_logView->setReadOnly(true);
     m_logView->setStyleSheet("background-color: #1e1e1e; color: #d4d4d4; font-family: Consolas; font-size: 13px;");
+
+
 
     // Send area
     auto *sendLayout = new QHBoxLayout();
@@ -88,6 +102,7 @@ void MainWindow::setupUi()
     m_statusLabel = new QLabel("Status: Disconnected");
 
     mainLayout->addLayout(topLayout);
+    mainLayout->addLayout(toolLayout);
     mainLayout->addWidget(m_logView, 1);
     mainLayout->addLayout(sendLayout);
     mainLayout->addWidget(m_statusLabel);
@@ -99,6 +114,9 @@ void MainWindow::setupUi()
     connect(m_btnConnect, &QPushButton::clicked, this, &MainWindow::onConnectClicked);
     connect(m_btnSend, &QPushButton::clicked, this, &MainWindow::onSendClicked);
     connect(m_sendEdit, &QLineEdit::returnPressed, this, &MainWindow::onSendClicked);
+
+    connect(m_btnClear, &QPushButton::clicked, this, &MainWindow::onClearClicked);
+    connect(m_btnSaveLog, &QPushButton::clicked, this, &MainWindow::onSaveLogClicked);
 }
 
 void MainWindow::onConnectionTypeChanged(int index)
@@ -148,7 +166,8 @@ void MainWindow::onConnectClicked()
         clearCurrentConnection();
         setConnectedState(false);
         m_statusLabel->setText("Status: Disconnected");
-        m_logView->append("<span style='color:#f85149;'>Disconnected</span>");
+       // m_logView->append("<span style='color:#f85149;'>Disconnected</span>");
+        appendLog("Disconnected", "#f85149");
         return;
     }
 
@@ -193,8 +212,10 @@ void MainWindow::onSendClicked()
 
     QByteArray data = (text + "\r\n").toUtf8();
     m_comm->send(data);
-
-    m_logView->append("<span style='color:#3fb950;'>TX: " + text.toHtmlEscaped() + "</span>");
+    m_txBytes += data.size();
+    updateStatusLabel();
+    //m_logView->append("<span style='color:#3fb950;'>TX: " + text.toHtmlEscaped() + "</span>");
+    appendLog("TX: " + text, "#3fb950");
     m_sendEdit->clear();
 }
 
@@ -202,7 +223,23 @@ void MainWindow::onDataReceived(const QByteArray &data)
 {
     QString text = QString::fromUtf8(data).trimmed();
     if (!text.isEmpty()) {
-        m_logView->append("<span style='color:#58a6ff;'>RX: " + text.toHtmlEscaped() + "</span>");
+     //   m_logView->append("<span style='color:#58a6ff;'>RX: " + text.toHtmlEscaped() + "</span>");
+        appendLog("RX: " + text, "#58a6ff");
+        m_rxBytes += data.size();
+        updateStatusLabel();
+    }
+
+}
+
+void MainWindow::updateStatusLabel()
+{
+    if (m_comm && m_comm->isOpen()) {
+        m_statusLabel->setText(
+            QString("Status: Connected (%1) | TX: %2  RX: %3")
+                .arg(m_comm->name())
+                .arg(m_txBytes)
+                .arg(m_rxBytes)
+            );
     }
 }
 
@@ -211,8 +248,10 @@ void MainWindow::onStateChanged(edcc::ConnectionState state)
     switch (state) {
     case ConnectionState::Connected:
         setConnectedState(true);
-        m_statusLabel->setText("Status: Connected (" + m_comm->name() + ")");
-        m_logView->append("<span style='color:#3fb950;'>Connected</span>");
+        updateStatusLabel();
+       // m_statusLabel->setText("Status: Connected (" + m_comm->name() + ")");
+    //    m_logView->append("<span style='color:#3fb950;'>Connected</span>");
+        appendLog("Connected", "#3fb950");
         break;
     case ConnectionState::Disconnected:
         setConnectedState(false);
@@ -228,9 +267,47 @@ void MainWindow::onStateChanged(edcc::ConnectionState state)
     }
 }
 
+void MainWindow::onClearClicked()
+{
+    m_logView->clear();
+    m_txBytes = 0;
+    m_rxBytes = 0;
+    m_statusLabel->setText(m_statusLabel->text().section('|', 0, 0).trimmed());
+}
+
+void MainWindow::onSaveLogClicked()
+{
+    QString fileName = QFileDialog::getSaveFileName(this, "Save Log",
+                                                    QString("edcc_log_%1.txt")
+                                                        .arg(QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss")),
+                                                    "Text Files (*.txt)");
+    if (fileName.isEmpty())
+        return;
+
+    QFile file(fileName);
+    if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QTextStream out(&file);
+        out << m_logView->toPlainText();
+        appendLog("Log saved to " + fileName, "#3fb950");
+    } else {
+        appendLog("Failed to save log", "#f85149");
+    }
+}
+
 void MainWindow::onErrorOccurred(const QString &error)
 {
-    m_logView->append("<span style='color:#f85149;'>Error: " + error.toHtmlEscaped() + "</span>");
+   // m_logView->append("<span style='color:#f85149;'>Error: " + error.toHtmlEscaped() + "</span>");
+    appendLog("Error: " + error, "#f85149");
 }
+
+void MainWindow::appendLog(const QString &text, const QString &color)
+{
+    QString time = QDateTime::currentDateTime().toString("hh:mm:ss.zzz");
+    m_logView->append(
+        QString("<span style='color:gray;'>[%1]</span> <span style='color:%2;'>%3</span>")
+            .arg(time, color, text.toHtmlEscaped())
+        );
+}
+
 
 } // namespace edcc
