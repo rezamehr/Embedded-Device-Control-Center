@@ -7,11 +7,12 @@
 #include <QLineEdit>
 #include <QLabel>
 #include <QSpinBox>
+#include <QListWidget>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QWidget>
-#include <QStackedWidget>
 
+#include "core/DeviceManager.h"
 #include "communication/SerialCommunication.h"
 #include "communication/TcpCommunication.h"
 
@@ -28,22 +29,35 @@ public:
 private slots:
     void onConnectionTypeChanged(int index);
     void onRefreshPorts();
-    void onConnectClicked();
+    void onConnectClicked();          // Connect / Disconnect selected or new device
+    void onAddDeviceClicked();        // Add current connection settings as a device
+    void onRemoveDeviceClicked();
+    void onDeviceSelected();
     void onSendClicked();
     void onClearClicked();
     void onSaveLogClicked();
-    void onDataReceived(const QByteArray &data);
-    void onStateChanged(edcc::ConnectionState state);
-    void updateStatusLabel();
-    void onErrorOccurred(const QString &error);
+
+    // DeviceManager signals
+    void onDeviceAdded(const QString &id);
+    void onDeviceRemoved(const QString &id);
+    void onDeviceStateChanged(const QString &id, edcc::ConnectionState state);
+    void onDeviceDataReceived(const QString &id, const QByteArray &data);
+    void onDeviceError(const QString &id, const QString &error);
 
 private:
     void setupUi();
     void setConnectedState(bool connected);
-    void clearCurrentConnection();
     void appendLog(const QString &text, const QString &color);
+    void updateStatusLabel();
+    void clearCurrentConnection();
+    ICommunication* createCommunication();   // Create Serial or TCP based on UI
 
-    // UI elements
+    // Left panel - Device list
+    QListWidget *m_deviceList;
+    QPushButton *m_btnAddDevice;
+    QPushButton *m_btnRemoveDevice;
+
+    // Connection settings
     QComboBox *m_typeCombo;
     QComboBox *m_portCombo;
     QComboBox *m_baudCombo;
@@ -51,17 +65,22 @@ private:
     QSpinBox  *m_portSpin;
     QPushButton *m_btnRefresh;
     QPushButton *m_btnConnect;
-    QPushButton *m_btnClear;
-    QPushButton *m_btnSaveLog;
-    QTextEdit *m_logView;
-    QLineEdit *m_sendEdit;
-    QPushButton *m_btnSend;
-    QLabel *m_statusLabel;
 
     QWidget *m_serialControls;
     QWidget *m_tcpControls;
 
-    ICommunication *m_comm = nullptr;
+    // Log and send
+    QTextEdit *m_logView;
+    QLineEdit *m_sendEdit;
+    QPushButton *m_btnSend;
+    QPushButton *m_btnClear;
+    QPushButton *m_btnSaveLog;
+    QLabel *m_statusLabel;
+
+    // Core
+    DeviceManager *m_deviceManager = nullptr;
+    QString m_currentDeviceId;          // Currently selected device ID
+    ICommunication *m_tempComm = nullptr; // Temporary connection before adding to manager
 
     qint64 m_txBytes = 0;
     qint64 m_rxBytes = 0;
