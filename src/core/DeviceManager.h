@@ -25,6 +25,16 @@ public:
     // Bulk operations
     void disconnectAll();
     void removeAll();
+    /**
+     * @brief Save all current devices to JSON configuration.
+     */
+    bool saveToConfig() const;
+
+        /**
+     * @brief Load devices from JSON configuration and add them.
+     * Existing devices are not removed automatically.
+     */
+    int loadFromConfig();
 
 signals:
     void deviceAdded(const QString &id);
@@ -43,6 +53,8 @@ private:
 
     QMap<QString, Device*> m_devices;
     int m_idCounter = 1;
+
+
 };
 
 } // namespace edcc
