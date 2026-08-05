@@ -13,6 +13,7 @@
 #include <QWidget>
 
 #include "core/DeviceManager.h"
+#include "logging/Logger.h"
 #include "communication/SerialCommunication.h"
 #include "communication/TcpCommunication.h"
 
@@ -36,6 +37,7 @@ private slots:
     void onSendClicked();
     void onClearClicked();
     void onSaveLogClicked();
+    void updateDeviceListItem(const QString &id);
 
     // DeviceManager signals
     void onDeviceAdded(const QString &id);
@@ -47,7 +49,7 @@ private slots:
 private:
     void setupUi();
     void setConnectedState(bool connected);
-    void appendLog(const QString &text, const QString &color);
+    //void appendLog(const QString &text, const QString &color);
     void updateStatusLabel();
     void clearCurrentConnection();
     ICommunication* createCommunication();   // Create Serial or TCP based on UI
