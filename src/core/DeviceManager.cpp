@@ -1,6 +1,10 @@
 #include "DeviceManager.h"
 #include <QUuid>
 
+#include "utils/JsonConfig.h"
+#include "communication/SerialCommunication.h"
+#include "communication/TcpCommunication.h"
+
 namespace edcc {
 
 DeviceManager::DeviceManager(QObject *parent)
@@ -107,6 +111,42 @@ void DeviceManager::onDeviceDataReceived(const QByteArray &data)
     if (dev) {
         emit deviceDataReceived(dev->id(), data);
     }
+}
+
+bool DeviceManager::saveToConfig() const
+{
+    QVector<DeviceInfo> list;
+    for (Device *dev : m_devices) {
+        list.append(dev->info());   // full configuration
+    }
+    return JsonConfig::saveDevices(list);
+}
+
+int DeviceManager::loadFromConfig()
+{
+    const QVector<DeviceInfo> list = JsonConfig::loadDevices();
+    int count = 0;
+
+    for (const DeviceInfo &info : list) {
+        ICommunication *comm = nullptr;
+
+        if (info.type == "serial" || !info.portName.isEmpty()) {
+            comm = new SerialCommunication(info.portName, info.baudRate);
+        } else if (info.type == "tcp" || !info.host.isEmpty()) {
+            comm = new TcpCommunication(info.host, info.port);
+        }
+
+        if (comm) {
+            // Use the saved id if available
+            DeviceInfo copy = info;
+            if (addDevice(copy, comm).isEmpty() == false) {
+                ++count;
+            } else {
+                delete comm;
+            }
+        }
+    }
+    return count;
 }
 
 void DeviceManager::onDeviceError(const QString &error)
