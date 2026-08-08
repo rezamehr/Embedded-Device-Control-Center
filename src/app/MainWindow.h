@@ -11,6 +11,7 @@
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QWidget>
+#include <QCheckBox>
 
 #include "core/DeviceManager.h"
 #include "logging/Logger.h"
@@ -67,6 +68,8 @@ private:
     QSpinBox  *m_portSpin;
     QPushButton *m_btnRefresh;
     QPushButton *m_btnConnect;
+
+    QCheckBox *m_chkShowRaw = nullptr;
 
     QWidget *m_serialControls;
     QWidget *m_tcpControls;
