@@ -21,7 +21,7 @@ jobs:
         host: 'windows'
         target: 'desktop'
         arch: 'win64_msvc2022_64'
-        modules: 'qtwebsockets'  
+        modules: 'qtwebsocketsوQt6Network وQt6SerialPort'  
         tools: 'tools_ifw,qtcmake'
         set-env: true
 
