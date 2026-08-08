@@ -40,7 +40,7 @@ DeviceInfo JsonConfig::deviceFromJson(const QJsonObject &obj)
     info.portName    = obj.value("portName").toString();
     info.host        = obj.value("host").toString();
     info.port        = static_cast<quint16>(obj.value("port").toInt(0));
-    info.baudRate    = static_cast<quint16>(obj.value("baudRate").toInt(0));
+    info.baudRate    = obj.value("baudRate").toInt(115200);  // qint32, default 115200
     info.type        = obj.value("type").toString();
     return info;
 }
