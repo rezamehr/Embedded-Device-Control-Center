@@ -16,13 +16,13 @@ Qt + CMake + Visual Studio/MSVC
 
 ### Key Features (Roadmap)
 
-| Version | Features |
-|---------|----------|
-| **v1.0** | Device Manager, Serial Monitor, TCP Monitor, Central Log Viewer |
-| **v1.5** | Multi-threaded Communication, Packet Parser, JSON Configuration |
-| **v2.0** | Firmware Updater (Bootloader support) |
-| **v3.0** | Real-time Charts, Alarm System |
-| **v4.0** | Plugin Architecture, MQTT, CAN |
+| Version | Features                                              | Status     |
+|---------|-------------------------------------------------------|------------|
+| **v1.0** | Device Manager, Serial, TCP, Logger, JSON Config     | ✅ Released |
+| **v1.5** | Multi-threaded Communication, Packet Parser          | Planned    |
+| **v2.0** | Firmware Updater                                      | Planned    |
+| **v3.0** | Real-time Charts, Alarm System                        | Planned    |
+| **v4.0** | Plugin Architecture, MQTT, CAN                        | Planned    |
 
 ---
 
@@ -60,14 +60,7 @@ cmake --build build
 **Current Version:** `1.0.0`
 
 EDCC v1.0 provides a solid foundation for managing and monitoring embedded devices over Serial and TCP, with multi-device support, centralized logging, and persistent configuration.
-و در جدول Roadmap می‌توانی بنویسی:
-Markdown| Version | Features                                              | Status     |
-|---------|-------------------------------------------------------|------------|
-| **v1.0** | Device Manager, Serial, TCP, Logger, JSON Config     | ✅ Released |
-| **v1.5** | Multi-threaded Communication, Packet Parser          | Planned    |
-| **v2.0** | Firmware Updater                                      | Planned    |
-| **v3.0** | Real-time Charts, Alarm System                        | Planned    |
-| **v4.0** | Plugin Architecture, MQTT, CAN                        | Planned    |
+
 
 License
 This project is licensed under the MIT License - see the LICENSE file for details.
