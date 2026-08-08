@@ -36,6 +36,10 @@ add_executable(EDCC
     src/communication/SerialCommunication.cpp
     src/communication/TcpCommunication.h
     src/communication/TcpCommunication.cpp
+
+    src/communication/CommunicationWorker.h
+    src/communication/CommunicationWorker.cpp
+    
     src/logging/Logger.h
     src/logging/Logger.cpp
 
