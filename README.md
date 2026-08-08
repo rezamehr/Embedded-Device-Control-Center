@@ -55,9 +55,19 @@ cd Embedded-Device-Control-Center
 cmake -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build
 
-Project Status
-Current Version: 0.1.0-dev (Foundation)
-This project is under active development.
+## Project Status
+
+**Current Version:** `1.0.0`
+
+EDCC v1.0 provides a solid foundation for managing and monitoring embedded devices over Serial and TCP, with multi-device support, centralized logging, and persistent configuration.
+و در جدول Roadmap می‌توانی بنویسی:
+Markdown| Version | Features                                              | Status     |
+|---------|-------------------------------------------------------|------------|
+| **v1.0** | Device Manager, Serial, TCP, Logger, JSON Config     | ✅ Released |
+| **v1.5** | Multi-threaded Communication, Packet Parser          | Planned    |
+| **v2.0** | Firmware Updater                                      | Planned    |
+| **v3.0** | Real-time Charts, Alarm System                        | Planned    |
+| **v4.0** | Plugin Architecture, MQTT, CAN                        | Planned    |
 
 License
 This project is licensed under the MIT License - see the LICENSE file for details.
