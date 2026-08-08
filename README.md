@@ -61,6 +61,9 @@ cmake --build build
 
 EDCC v1.0 provides a solid foundation for managing and monitoring embedded devices over Serial and TCP, with multi-device support, centralized logging, and persistent configuration.
 
+## Screenshots
+
+![Main Window](docs/images/main_window.png)
 
 License
 This project is licensed under the MIT License - see the LICENSE file for details.
