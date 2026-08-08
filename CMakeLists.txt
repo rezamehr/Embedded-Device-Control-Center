@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.21)
 
 project(EDCC
-    VERSION 1.1.0
+    VERSION 0.1.2
     DESCRIPTION "Embedded Device Control Center"
     LANGUAGES CXX
 )
@@ -17,6 +17,7 @@ find_package(Qt6 REQUIRED COMPONENTS
     Widgets
     Network
     SerialPort
+    Test
 )
 
 add_executable(EDCC
@@ -31,17 +32,25 @@ add_executable(EDCC
     src/core/Device.cpp
     src/core/DeviceManager.h
     src/core/DeviceManager.cpp
+    src/core/IPacketParser.h
 
     src/communication/SerialCommunication.h
     src/communication/SerialCommunication.cpp
     src/communication/TcpCommunication.h
     src/communication/TcpCommunication.cpp
-
     src/communication/CommunicationWorker.h
     src/communication/CommunicationWorker.cpp
-    
+    src/communication/SimplePacketParser.h
+    src/communication/SimplePacketParser.cpp
+
     src/logging/Logger.h
     src/logging/Logger.cpp
+
+    src/utils/JsonConfig.h
+    src/utils/JsonConfig.cpp
+    src/core/IPacketParser.cpp
+
+
 
 
 
@@ -58,3 +67,10 @@ target_link_libraries(EDCC
         Qt6::Network
         Qt6::SerialPort
 )
+
+option(EDCC_BUILD_TESTS "Build unit tests" ON)
+
+if(EDCC_BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(tests)
+endif()
