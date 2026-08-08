@@ -4,6 +4,7 @@
 #include "utils/JsonConfig.h"
 #include "communication/SerialCommunication.h"
 #include "communication/TcpCommunication.h"
+#include "logging/Logger.h"
 
 namespace edcc {
 
@@ -46,6 +47,10 @@ QString DeviceManager::addDevice(const DeviceInfo &info, ICommunication *communi
             this, &DeviceManager::onDeviceDataReceived);
     connect(dev, &Device::errorOccurred,
             this, &DeviceManager::onDeviceError);
+
+    connect(dev, &Device::packetReceived, this, [this, id = finalInfo.id](const QByteArray &packet) {
+        emit devicePacketReceived(id, packet);
+    });
 
     m_devices.insert(finalInfo.id, dev);
     emit deviceAdded(finalInfo.id);
@@ -127,25 +132,55 @@ int DeviceManager::loadFromConfig()
     const QVector<DeviceInfo> list = JsonConfig::loadDevices();
     int count = 0;
 
+    Logger::instance().info(QString("Loading %1 device(s) from config...").arg(list.size()));
+
     for (const DeviceInfo &info : list) {
         ICommunication *comm = nullptr;
 
         if (info.type == "serial" || !info.portName.isEmpty()) {
-            comm = new SerialCommunication(info.portName, info.baudRate);
-        } else if (info.type == "tcp" || !info.host.isEmpty()) {
+            if (info.portName.isEmpty()) {
+                Logger::instance().error("Skip device: empty portName", info.id);
+                continue;
+            }
+
+            Logger::instance().debug(
+                QString("Create Serial: port=%1 baud=%2").arg(info.portName).arg(info.baudRate),
+                info.id);
+
+            comm = new SerialCommunication(info.portName,
+                                           info.baudRate > 0 ? info.baudRate : 115200);
+        }
+        else if (info.type == "tcp" || !info.host.isEmpty()) {
+            if (info.host.isEmpty() || info.port == 0) {
+                Logger::instance().error("Skip device: invalid host/port", info.id);
+                continue;
+            }
+
+            Logger::instance().debug(
+                QString("Create TCP: %1:%2").arg(info.host).arg(info.port),
+                info.id);
+
             comm = new TcpCommunication(info.host, info.port);
         }
-
-        if (comm) {
-            // Use the saved id if available
-            DeviceInfo copy = info;
-            if (addDevice(copy, comm).isEmpty() == false) {
-                ++count;
-            } else {
-                delete comm;
-            }
+        else {
+            Logger::instance().error("Skip device: unknown type", info.id);
+            continue;
         }
+
+        // Keep the original saved id
+        DeviceInfo copy = info;
+        const QString id = addDevice(copy, comm);
+
+        if (id.isEmpty()) {
+            Logger::instance().error("Failed to add loaded device", info.id);
+            delete comm;
+            continue;
+        }
+
+        Logger::instance().info("Loaded device OK", id);
+        ++count;
     }
+
     return count;
 }
 
