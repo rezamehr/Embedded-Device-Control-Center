@@ -41,6 +41,7 @@ signals:
     void deviceRemoved(const QString &id);
     void deviceStateChanged(const QString &id, edcc::ConnectionState state);
     void deviceDataReceived(const QString &id, const QByteArray &data);
+    void devicePacketReceived(const QString &id, const QByteArray &packet); //new
     void deviceError(const QString &id, const QString &error);
 
 private slots:
