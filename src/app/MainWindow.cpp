@@ -31,6 +31,23 @@ MainWindow::MainWindow(QWidget *parent)
     connect(m_deviceManager, &DeviceManager::deviceError,
             this, &MainWindow::onDeviceError);
 
+    // connect(m_deviceManager, &DeviceManager::deviceDataReceived,
+    //         this, &MainWindow::onDeviceDataReceived);   // raw
+
+    // // New: packet-level data
+    // // We need a new signal in DeviceManager for packets (next small step)
+    connect(m_deviceManager, &DeviceManager::devicePacketReceived,
+            this, [this](const QString &id, const QByteArray &packet) {
+                Logger::instance().info(
+                    QString("PACKET (%1 bytes): %2")
+                        .arg(packet.size())
+                        .arg(QString(packet.toHex(' '))),
+                    id);
+
+                m_rxBytes += packet.size();
+                updateStatusLabel();
+            });
+
     // Connect the central logger to the UI log view
     connect(&Logger::instance(), &Logger::logMessage,
             this, [this](LogLevel level,
@@ -149,11 +166,19 @@ void MainWindow::setupUi()
     topLayout->addWidget(m_tcpControls, 1);
     topLayout->addWidget(m_btnConnect);
 
+
     // --- Tool buttons ---
     auto *toolLayout = new QHBoxLayout();
     m_btnClear = new QPushButton("Clear Log");
     m_btnSaveLog = new QPushButton("Save Log");
     toolLayout->addStretch();
+    toolLayout->addWidget(m_btnClear);
+    toolLayout->addWidget(m_btnSaveLog);
+
+    m_chkShowRaw = new QCheckBox("Show raw data");
+    m_chkShowRaw->setChecked(false);   // default: only packets
+
+    toolLayout->addWidget(m_chkShowRaw);
     toolLayout->addWidget(m_btnClear);
     toolLayout->addWidget(m_btnSaveLog);
 
@@ -460,12 +485,33 @@ void MainWindow::onDeviceStateChanged(const QString &id, ConnectionState state)
 
 void MainWindow::onDeviceDataReceived(const QString &id, const QByteArray &data)
 {
-    QString text = QString::fromUtf8(data).trimmed();
-    if (text.isEmpty()) return;
+    // QString text = QString::fromUtf8(data).trimmed();
+    // if (text.isEmpty()) return;
+    // m_rxBytes += data.size();
+    // //appendLog(QString("[%1] RX: %2").arg(id, text), "#58a6ff");
+    // Logger::instance().info("RX: " + text, id);
+    // updateStatusLabel();
+    // Only show raw data if user enabled it
+    if (!m_chkShowRaw || !m_chkShowRaw->isChecked())
+        return;
+
+    QString text = QString::fromUtf8(data);
+    // If data is binary, show hex instead of broken characters
+    bool isPrintable = true;
+    for (unsigned char c : data) {
+        if (c < 32 && c != '\n' && c != '\r' && c != '\t') {
+            isPrintable = false;
+            break;
+        }
+    }
+
+    if (isPrintable) {
+        Logger::instance().info("RX: " + text.trimmed(), id);
+    } else {
+        Logger::instance().info("RX: " + QString(data.toHex(' ')), id);
+    }
 
     m_rxBytes += data.size();
-    //appendLog(QString("[%1] RX: %2").arg(id, text), "#58a6ff");
-    Logger::instance().info("RX: " + text, id);
     updateStatusLabel();
 }
 
