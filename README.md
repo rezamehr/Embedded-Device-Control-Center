@@ -35,7 +35,7 @@ It provides multi-device management over **Serial** and **TCP**, real-time loggi
 ---
 
 ## Screenshots
-![Main Window](docs/images/main_window.png)
+![Main Window](docs/main_window.png.png)
 ---
 
 ## Roadmap
