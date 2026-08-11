@@ -12,11 +12,16 @@
 #include <QHBoxLayout>
 #include <QWidget>
 #include <QCheckBox>
+#include <QProgressBar>
+#include <QGroupBox>
+#include <QFile>
 
 #include "core/DeviceManager.h"
 #include "logging/Logger.h"
 #include "communication/SerialCommunication.h"
 #include "communication/TcpCommunication.h"
+#include "firmware/FirmwareUpdater.h"
+#include "firmware/DummyMemoryTarget.h"
 
 namespace edcc {
 
@@ -47,6 +52,14 @@ private slots:
     void onDeviceDataReceived(const QString &id, const QByteArray &data);
     void onDeviceError(const QString &id, const QString &error);
 
+    //Firmware
+    void onBrowseFirmware();
+    void onStartFirmwareUpdate();
+    void onAbortFirmwareUpdate();
+    void onFirmwareProgress(int percent);
+    void onFirmwareStatus(const QString &message);
+    void onFirmwareFinished(bool success, const QString &message);
+    void onFirmwareError(const QString &error);
 private:
     void setupUi();
     void setConnectedState(bool connected);
@@ -89,6 +102,21 @@ private:
 
     qint64 m_txBytes = 0;
     qint64 m_rxBytes = 0;
+
+    // Firmware Update UI
+    QGroupBox   *m_firmwareGroup = nullptr;
+    QLineEdit   *m_fwPathEdit = nullptr;
+    QPushButton *m_btnBrowseFw = nullptr;
+    QLineEdit   *m_fwAddressEdit = nullptr;
+    QProgressBar *m_fwProgress = nullptr;
+    QLabel      *m_fwStatusLabel = nullptr;
+    QPushButton *m_btnStartUpdate = nullptr;
+    QPushButton *m_btnAbortUpdate = nullptr;
+
+    // Firmware engine (Dummy for now)
+    DummyMemoryTarget *m_dummyTarget = nullptr;
+    FirmwareUpdater   *m_fwUpdater = nullptr;
+    QByteArray         m_firmwareData;
 };
 
 } // namespace edcc
