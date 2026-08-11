@@ -6,6 +6,9 @@
 #include <QFileDialog>
 #include <QFile>
 #include <QTextStream>
+#include <QGroupBox>
+#include <QProgressBar>
+#include <QIODevice>
 
 namespace edcc {
 
@@ -18,6 +21,19 @@ MainWindow::MainWindow(QWidget *parent)
     onRefreshPorts();
     setConnectedState(false);
     onConnectionTypeChanged(0); // Default to Serial
+
+    // Firmware updater (Dummy target for now)
+    m_dummyTarget = new DummyMemoryTarget(this);
+    m_fwUpdater = new FirmwareUpdater(m_dummyTarget, this);
+
+    connect(m_fwUpdater, &FirmwareUpdater::progressChanged,
+            this, &MainWindow::onFirmwareProgress);
+    connect(m_fwUpdater, &FirmwareUpdater::statusMessage,
+            this, &MainWindow::onFirmwareStatus);
+    connect(m_fwUpdater, &FirmwareUpdater::finished,
+            this, &MainWindow::onFirmwareFinished);
+    connect(m_fwUpdater, &FirmwareUpdater::errorOccurred,
+            this, &MainWindow::onFirmwareError);
 
     // Connect DeviceManager signals
     connect(m_deviceManager, &DeviceManager::deviceAdded,
@@ -200,6 +216,50 @@ void MainWindow::setupUi()
 
     rightPanel->addLayout(topLayout);
     rightPanel->addLayout(toolLayout);
+
+    // --- Firmware Update panel ---
+    m_firmwareGroup = new QGroupBox(tr("Firmware Update"));
+    auto *fwLayout = new QVBoxLayout(m_firmwareGroup);
+
+    // File row
+    auto *fileRow = new QHBoxLayout();
+    m_fwPathEdit = new QLineEdit();
+    m_fwPathEdit->setPlaceholderText(tr("Select firmware .bin file..."));
+    m_fwPathEdit->setReadOnly(true);
+    m_btnBrowseFw = new QPushButton(tr("Browse"));
+    fileRow->addWidget(m_fwPathEdit, 1);
+    fileRow->addWidget(m_btnBrowseFw);
+
+    // Address row
+    auto *addrRow = new QHBoxLayout();
+    m_fwAddressEdit = new QLineEdit(QStringLiteral("0x08004000"));
+    addrRow->addWidget(new QLabel(tr("Start address:")));
+    addrRow->addWidget(m_fwAddressEdit, 1);
+
+    // Progress + status
+    m_fwProgress = new QProgressBar();
+    m_fwProgress->setRange(0, 100);
+    m_fwProgress->setValue(0);
+
+    m_fwStatusLabel = new QLabel(tr("Status: Idle"));
+
+    // Buttons
+    auto *fwBtnRow = new QHBoxLayout();
+    m_btnStartUpdate = new QPushButton(tr("Start Update"));
+    m_btnAbortUpdate = new QPushButton(tr("Abort"));
+    m_btnAbortUpdate->setEnabled(false);
+    fwBtnRow->addWidget(m_btnStartUpdate);
+    fwBtnRow->addWidget(m_btnAbortUpdate);
+    fwBtnRow->addStretch();
+
+    fwLayout->addLayout(fileRow);
+    fwLayout->addLayout(addrRow);
+    fwLayout->addWidget(m_fwProgress);
+    fwLayout->addWidget(m_fwStatusLabel);
+    fwLayout->addLayout(fwBtnRow);
+
+    rightPanel->addWidget(m_firmwareGroup);
+
     rightPanel->addWidget(m_logView, 1);
     rightPanel->addLayout(sendLayout);
     rightPanel->addWidget(m_statusLabel);
@@ -220,6 +280,12 @@ void MainWindow::setupUi()
     connect(m_sendEdit, &QLineEdit::returnPressed, this, &MainWindow::onSendClicked);
     connect(m_btnClear, &QPushButton::clicked, this, &MainWindow::onClearClicked);
     connect(m_btnSaveLog, &QPushButton::clicked, this, &MainWindow::onSaveLogClicked);
+
+    //firmware
+    connect(m_btnBrowseFw, &QPushButton::clicked,this, &MainWindow::onBrowseFirmware);
+    connect(m_btnStartUpdate, &QPushButton::clicked,this, &MainWindow::onStartFirmwareUpdate);
+    connect(m_btnAbortUpdate, &QPushButton::clicked,this, &MainWindow::onAbortFirmwareUpdate);
+
 }
 
 void MainWindow::onConnectionTypeChanged(int index)
@@ -545,6 +611,113 @@ void MainWindow::onDeviceError(const QString &id, const QString &error)
     Logger::instance().error(error, id);
 }
 
+// ==================== Firmware ====================
+void MainWindow::onBrowseFirmware()
+{
+    const QString path = QFileDialog::getOpenFileName(
+        this,
+        tr("Select Firmware"),
+        QString(),
+        tr("Binary Files (*.bin);;All Files (*)"));
+
+    if (path.isEmpty()) {
+        return;
+    }
+
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly)) {
+        QMessageBox::warning(this, tr("Error"), tr("Cannot open firmware file."));
+        return;
+    }
+
+    m_firmwareData = file.readAll();
+    file.close();
+
+    m_fwPathEdit->setText(path);
+    m_fwStatusLabel->setText(
+        tr("Status: Loaded %1 bytes").arg(m_firmwareData.size()));
+    m_fwProgress->setValue(0);
+}
+
+void MainWindow::onStartFirmwareUpdate()
+{
+    if (m_firmwareData.isEmpty()) {
+        QMessageBox::information(this, tr("Info"),
+                                 tr("Please select a firmware file first."));
+        return;
+    }
+
+    if (m_fwUpdater->isBusy()) {
+        QMessageBox::information(this, tr("Info"),
+                                 tr("An update is already in progress."));
+        return;
+    }
+
+    bool ok = false;
+    const QString addrText = m_fwAddressEdit->text().trimmed();
+    const quint32 address = addrText.toUInt(&ok, 0); // accepts 0x...
+    if (!ok) {
+        QMessageBox::warning(this, tr("Error"),
+                             tr("Invalid start address."));
+        return;
+    }
+
+    m_btnStartUpdate->setEnabled(false);
+    m_btnAbortUpdate->setEnabled(true);
+    m_btnBrowseFw->setEnabled(false);
+    m_fwProgress->setValue(0);
+    m_fwStatusLabel->setText(tr("Status: Starting..."));
+
+    const bool started = m_fwUpdater->startUpdate(m_firmwareData, address);
+    if (!started) {
+        m_btnStartUpdate->setEnabled(true);
+        m_btnAbortUpdate->setEnabled(false);
+        m_btnBrowseFw->setEnabled(true);
+    }
+}
+
+void MainWindow::onAbortFirmwareUpdate()
+{
+    if (m_fwUpdater) {
+        m_fwUpdater->abort();
+        m_fwStatusLabel->setText(tr("Status: Abort requested..."));
+    }
+}
+
+void MainWindow::onFirmwareProgress(int percent)
+{
+    m_fwProgress->setValue(percent);
+}
+
+void MainWindow::onFirmwareStatus(const QString &message)
+{
+    m_fwStatusLabel->setText(tr("Status: %1").arg(message));
+    Logger::instance().info(message, QStringLiteral("Firmware"));
+}
+
+void MainWindow::onFirmwareFinished(bool success, const QString &message)
+{
+    m_btnStartUpdate->setEnabled(true);
+    m_btnAbortUpdate->setEnabled(false);
+    m_btnBrowseFw->setEnabled(true);
+
+    m_fwStatusLabel->setText(
+        success ? tr("Status: %1").arg(message)
+                : tr("Status: Failed - %1").arg(message));
+
+    if (success) {
+        m_fwProgress->setValue(100);
+        QMessageBox::information(this, tr("Firmware Update"), message);
+    } else {
+        QMessageBox::warning(this, tr("Firmware Update"), message);
+    }
+}
+
+void MainWindow::onFirmwareError(const QString &error)
+{
+    Logger::instance().error(error, QStringLiteral("Firmware"));
+    m_fwStatusLabel->setText(tr("Status: Error - %1").arg(error));
+}
 // ==================== Helpers ====================
 
 void MainWindow::setConnectedState(bool connected)
