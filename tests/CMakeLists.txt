@@ -28,6 +28,7 @@ add_executable(test_jsonconfig
     ${CMAKE_SOURCE_DIR}/src/utils/JsonConfig.cpp
     ${CMAKE_SOURCE_DIR}/src/utils/JsonConfig.h
     ${CMAKE_SOURCE_DIR}/src/core/Types.h
+
 )
 
 target_include_directories(test_jsonconfig
@@ -43,7 +44,6 @@ target_link_libraries(test_jsonconfig
 
 add_test(NAME test_jsonconfig COMMAND test_jsonconfig)
 
-
 # ---------------- Firmware Updater ----------------
 add_executable(test_firmware
     test_firmware.cpp
@@ -58,6 +58,8 @@ add_executable(test_firmware
 
     ${CMAKE_SOURCE_DIR}/src/logging/Logger.cpp
     ${CMAKE_SOURCE_DIR}/src/logging/Logger.h
+
+
 )
 
 target_include_directories(test_firmware
@@ -72,3 +74,35 @@ target_link_libraries(test_firmware
 )
 
 add_test(NAME test_firmware COMMAND test_firmware)
+
+
+# ---------------- Serial Bootloader Target ----------------
+add_executable(test_serialbootloader
+    test_serialbootloader.cpp
+    MockCommunication.h
+
+    ${CMAKE_SOURCE_DIR}/src/firmware/SerialBootloaderTarget.cpp
+    ${CMAKE_SOURCE_DIR}/src/firmware/SerialBootloaderTarget.h
+    ${CMAKE_SOURCE_DIR}/src/firmware/IMemoryTarget.h
+    ${CMAKE_SOURCE_DIR}/src/firmware/protocol/BootloaderProtocol.h
+
+    ${CMAKE_SOURCE_DIR}/src/logging/Logger.cpp
+    ${CMAKE_SOURCE_DIR}/src/logging/Logger.h
+    ${CMAKE_SOURCE_DIR}/src/core/ICommunication.h
+    ${CMAKE_SOURCE_DIR}/src/core/Types.h
+)
+
+target_include_directories(test_serialbootloader
+    PRIVATE
+        ${CMAKE_SOURCE_DIR}/src
+        ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+target_link_libraries(test_serialbootloader
+    PRIVATE
+        Qt6::Test
+        Qt6::Core
+)
+
+add_test(NAME test_serialbootloader COMMAND test_serialbootloader)
+
