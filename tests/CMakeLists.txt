@@ -47,11 +47,15 @@ add_test(NAME test_jsonconfig COMMAND test_jsonconfig)
 # ---------------- Firmware Updater ----------------
 add_executable(test_firmware
     test_firmware.cpp
+
     ${CMAKE_SOURCE_DIR}/src/firmware/FirmwareUpdater.cpp
     ${CMAKE_SOURCE_DIR}/src/firmware/FirmwareUpdater.h
+    ${CMAKE_SOURCE_DIR}/src/firmware/FirmwareUpdateWorker.cpp
+    ${CMAKE_SOURCE_DIR}/src/firmware/FirmwareUpdateWorker.h
     ${CMAKE_SOURCE_DIR}/src/firmware/DummyMemoryTarget.cpp
     ${CMAKE_SOURCE_DIR}/src/firmware/DummyMemoryTarget.h
     ${CMAKE_SOURCE_DIR}/src/firmware/IMemoryTarget.h
+
     ${CMAKE_SOURCE_DIR}/src/logging/Logger.cpp
     ${CMAKE_SOURCE_DIR}/src/logging/Logger.h
 )
