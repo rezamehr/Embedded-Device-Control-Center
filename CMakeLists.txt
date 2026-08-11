@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.21)
 
 project(EDCC
-    VERSION 1.5.0
+    VERSION 1.6.0
     DESCRIPTION "Embedded Device Control Center"
     LANGUAGES CXX
 )
@@ -49,6 +49,11 @@ add_executable(EDCC
     src/utils/JsonConfig.h
     src/utils/JsonConfig.cpp
     src/core/IPacketParser.cpp
+    src/firmware/IMemoryTarget.h
+    src/firmware/FirmwareUpdater.h
+    src/firmware/FirmwareUpdater.cpp
+    src/firmware/DummyMemoryTarget.cpp
+    src/firmware/DummyMemoryTarget.h
 
 
 
