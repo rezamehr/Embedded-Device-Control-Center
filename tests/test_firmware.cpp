@@ -54,7 +54,7 @@ void TestFirmware::testSuccessfulUpdate()
     QVERIFY(started);
 
     // Wait for finished signal
-   // QVERIFY(finishedSpy.wait(1000));
+    QVERIFY(finishedSpy.wait(3000));
     // we nned to wait because signal finished before
     QCOMPARE(finishedSpy.count(), 1);
 
@@ -121,10 +121,17 @@ void TestFirmware::testNotReady()
 {
     m_target->setReady(false);
 
+    QSignalSpy finishedSpy(m_updater, &FirmwareUpdater::finished);
     QSignalSpy errorSpy(m_updater, &FirmwareUpdater::errorOccurred);
 
     const bool started = m_updater->startUpdate(QByteArray(100, 0x11), 0x08004000);
-    QVERIFY(!started);
+    QVERIFY(started);
+    QVERIFY(finishedSpy.wait(2000));
+    QCOMPARE(finishedSpy.count(), 1);
+
+    const QList<QVariant> args = finishedSpy.takeFirst();
+    const bool success = args.at(0).toBool();
+    QVERIFY(!success);
     QVERIFY(errorSpy.count() > 0);
 }
 
