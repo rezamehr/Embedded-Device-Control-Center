@@ -42,3 +42,29 @@ target_link_libraries(test_jsonconfig
 )
 
 add_test(NAME test_jsonconfig COMMAND test_jsonconfig)
+
+
+# ---------------- Firmware Updater ----------------
+add_executable(test_firmware
+    test_firmware.cpp
+    ${CMAKE_SOURCE_DIR}/src/firmware/FirmwareUpdater.cpp
+    ${CMAKE_SOURCE_DIR}/src/firmware/FirmwareUpdater.h
+    ${CMAKE_SOURCE_DIR}/src/firmware/DummyMemoryTarget.cpp
+    ${CMAKE_SOURCE_DIR}/src/firmware/DummyMemoryTarget.h
+    ${CMAKE_SOURCE_DIR}/src/firmware/IMemoryTarget.h
+    ${CMAKE_SOURCE_DIR}/src/logging/Logger.cpp
+    ${CMAKE_SOURCE_DIR}/src/logging/Logger.h
+)
+
+target_include_directories(test_firmware
+    PRIVATE
+        ${CMAKE_SOURCE_DIR}/src
+)
+
+target_link_libraries(test_firmware
+    PRIVATE
+        Qt6::Test
+        Qt6::Core
+)
+
+add_test(NAME test_firmware COMMAND test_firmware)
