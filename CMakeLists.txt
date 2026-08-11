@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.21)
 
 project(EDCC
-    VERSION 1.6.0
+    VERSION 1.7.0
     DESCRIPTION "Embedded Device Control Center"
     LANGUAGES CXX
 )
@@ -54,6 +54,11 @@ add_executable(EDCC
     src/firmware/FirmwareUpdater.cpp
     src/firmware/DummyMemoryTarget.cpp
     src/firmware/DummyMemoryTarget.h
+    src/firmware/FirmwareUpdateWorker.h
+    src/firmware/FirmwareUpdateWorker.cpp
+    src/firmware/protocol/BootloaderProtocol.h
+    src/firmware/SerialBootloaderTarget.h
+    src/firmware/SerialBootloaderTarget.cpp
 
 
 
