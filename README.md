@@ -16,6 +16,8 @@
 It provides multi-device management over **Serial** and **TCP**, real-time logging, persistent configuration, and a packet parser foundation for structured protocols.
 
 ---
+**Current version: 2.0.0**
+---
 
 ## Features (v1.5.0)
 
