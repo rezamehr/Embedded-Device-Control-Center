@@ -23,6 +23,7 @@ private slots:
     void testEmptyPayload();
     void testGarbageThenValidPacket();
     void testResetClearsState();
+    void testIdentityFrameFromSpec();
 
 private:
     SimplePacketParser *m_parser = nullptr;
@@ -30,7 +31,7 @@ private:
     QString m_lastError;
     int m_packetCount = 0;
     int m_errorCount = 0;
-
+/** Build a valid frame with payload-only XOR checksum. */
     static QByteArray buildFrame(const QByteArray &payload);
 };
 
@@ -38,12 +39,12 @@ QByteArray TestProtocol::buildFrame(const QByteArray &payload)
 {
     QByteArray frame;
     frame.append(static_cast<char>(SimplePacketParser::START_BYTE));
-    frame.append(static_cast<char>(payload.size()));
+    frame.append(static_cast<char>(payload.size() & 0xFF)); // LENGTH = 1 byte
 
-    quint8 checksum = static_cast<quint8>(payload.size());
+    quint8 checksum = 0;
     for (unsigned char b : payload) {
         frame.append(static_cast<char>(b));
-        checksum ^= b;
+        checksum ^= b;   // XOR payload only (NOT length)
     }
     frame.append(static_cast<char>(checksum));
     return frame;
@@ -153,6 +154,25 @@ void TestProtocol::testResetClearsState()
 
     QCOMPARE(m_packetCount, 1);
     QCOMPARE(m_lastPacket, payload);
+}
+/**
+ * @brief Golden frame from docs/bootloader_protocol.md (IDENTITY response)
+ *
+ * AA 0C FF 50 04 00 00 20 00 00 00 02 00 01 88
+ */
+void TestProtocol::testIdentityFrameFromSpec()
+{
+    const QByteArray frame =
+        QByteArray::fromHex("AA0CFF500400002000000002000188");
+
+    m_parser->feed(frame);
+
+    QCOMPARE(m_packetCount, 1);
+    QCOMPARE(m_errorCount, 0);
+
+    const QByteArray expectedPayload =
+        QByteArray::fromHex("FF5004000020000000020001");
+    QCOMPARE(m_lastPacket, expectedPayload);
 }
 //QVERIFY2(condition, "message");
 //QCOMPARE(actual, expected, 0.001); Comparison with approximate value (for float/double)
