@@ -275,7 +275,7 @@ void SerialBootloaderTarget::onDeviceDataReceived(const QByteArray &data)
                 .arg(calculated, 2, 16, QChar('0'))
                 .arg(receivedChecksum == calculated ? "OK" : "FAIL"));
 
-        // بایت‌به‌بایت XOR برای دیباگ
+        //  XOR Dibage 
         {
             QString xorTrace;
             quint8 running = 0;
@@ -337,7 +337,7 @@ bool SerialBootloaderTarget::sendCommandAndWait(const QByteArray &frame,
     m_device->send(frame);
     timer.start(timeoutMs);
 
-    // این Event Loop را زنده نگه می‌دارد تا dataReceived پردازش شود
+    //  Event Loop dataReceived  
     loop.exec();
 
     disconnect(connResponse);
