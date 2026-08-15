@@ -1,5 +1,6 @@
 find_package(Qt6 REQUIRED COMPONENTS Test)
 
+
 # ---------------- Protocol / Packet Parser ----------------
 add_executable(test_protocol
     test_protocol.cpp
@@ -81,15 +82,40 @@ add_executable(test_serialbootloader
     test_serialbootloader.cpp
     MockCommunication.h
 
+    # Firmware
     ${CMAKE_SOURCE_DIR}/src/firmware/SerialBootloaderTarget.cpp
     ${CMAKE_SOURCE_DIR}/src/firmware/SerialBootloaderTarget.h
     ${CMAKE_SOURCE_DIR}/src/firmware/IMemoryTarget.h
     ${CMAKE_SOURCE_DIR}/src/firmware/protocol/BootloaderProtocol.h
 
-    ${CMAKE_SOURCE_DIR}/src/logging/Logger.cpp
-    ${CMAKE_SOURCE_DIR}/src/logging/Logger.h
+    # Core / Device
+    ${CMAKE_SOURCE_DIR}/src/core/Device.cpp
+    ${CMAKE_SOURCE_DIR}/src/core/Device.h
+    ${CMAKE_SOURCE_DIR}/src/core/DeviceManager.cpp
+    ${CMAKE_SOURCE_DIR}/src/core/DeviceManager.h
+    ${CMAKE_SOURCE_DIR}/src/core/IDevice.h
     ${CMAKE_SOURCE_DIR}/src/core/ICommunication.h
     ${CMAKE_SOURCE_DIR}/src/core/Types.h
+    ${CMAKE_SOURCE_DIR}/src/core/IPacketParser.h
+    ${CMAKE_SOURCE_DIR}/src/core/IPacketParser.cpp
+
+    # Communication worker (required by Device)
+    ${CMAKE_SOURCE_DIR}/src/communication/CommunicationWorker.cpp
+    ${CMAKE_SOURCE_DIR}/src/communication/CommunicationWorker.h
+    ${CMAKE_SOURCE_DIR}/src/communication/SerialCommunication.h
+    ${CMAKE_SOURCE_DIR}/src/communication/SerialCommunication.cpp
+    ${CMAKE_SOURCE_DIR}/src/communication/TcpCommunication.h
+    ${CMAKE_SOURCE_DIR}/src/communication/TcpCommunication.cpp
+    ${CMAKE_SOURCE_DIR}/src/communication/SimplePacketParser.cpp
+    ${CMAKE_SOURCE_DIR}/src/communication/SimplePacketParser.h
+
+    # Logging
+    ${CMAKE_SOURCE_DIR}/src/logging/Logger.cpp
+    ${CMAKE_SOURCE_DIR}/src/logging/Logger.h
+
+    # Utils (if DeviceManager uses JsonConfig)
+    ${CMAKE_SOURCE_DIR}/src/utils/JsonConfig.cpp
+    ${CMAKE_SOURCE_DIR}/src/utils/JsonConfig.h
 )
 
 target_include_directories(test_serialbootloader
@@ -102,7 +128,8 @@ target_link_libraries(test_serialbootloader
     PRIVATE
         Qt6::Test
         Qt6::Core
+        Qt6::SerialPort
+        Qt6::Network
 )
 
 add_test(NAME test_serialbootloader COMMAND test_serialbootloader)
-
