@@ -1,13 +1,14 @@
 #pragma once
 
 #include "core/ICommunication.h"
+#include "core/Types.h"
 
 #include <QByteArray>
 
 namespace edcc {
 
 /**
- * @brief Simple in-memory mock of ICommunication for unit tests.
+* @brief In-memory mock of ICommunication for unit tests.
  *
  * Call setNextResponse() before an operation that expects a reply.
  * The response is injected synchronously inside send().
@@ -24,13 +25,21 @@ public:
 
     bool open() override
     {
+        if (m_open)
+            return true;
+
         m_open = true;
+        emit stateChanged(ConnectionState::Connected);  // ← importan
         return true;
     }
 
     void close() override
     {
+        if (!m_open)
+            return;
+
         m_open = false;
+        emit stateChanged(ConnectionState::Disconnected); // ← importan
     }
 
     bool isOpen() const override
