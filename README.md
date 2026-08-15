@@ -71,6 +71,23 @@ More details: [`docs/architecture.md`](docs/architecture.md)
 - Modules: `Widgets`, `Network`, `SerialPort`, `Test` (for unit tests)
 
 ---
+## Bootloader Protocol
+
+EDCC uses a simple framed protocol to update firmware on target devices
+(STM32 and similar MCUs).
+
+Full specification, command list, and request/response examples:
+
+➡️ **[docs/bootloader_protocol.md](docs/bootloader_protocol.md)**
+
+### Firmware Update
+
+1. Connect the device (Serial or TCP)
+2. Put the MCU into bootloader mode
+3. Select a `.bin` file in the Firmware Update panel
+4. Start the update (Erase → Write → Verify → Jump)
+
+Protocol details: [Bootloader Protocol v1.0](docs/bootloader_protocol.md)
 
 ## Build Instructions
 
