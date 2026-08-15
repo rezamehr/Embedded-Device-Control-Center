@@ -1,7 +1,7 @@
 #pragma once
 
 #include "IMemoryTarget.h"
-#include "core/ICommunication.h"
+#include "core/Device.h"
 
 #include <QByteArray>
 #include <QMutex>
@@ -10,24 +10,19 @@
 namespace edcc {
 
 /**
- * @brief IMemoryTarget implementation that communicates with a custom
- *        bootloader over an existing ICommunication channel (Serial/TCP).
+ * @brief Bootloader memory target bound to an existing managed Device.
  *
- * Typical usage:
- *   1. Open the communication channel
- *   2. Call queryIdentity()
- *   3. Use erase / write / read / verify / jumpTo through FirmwareUpdater
+ * Uses Device::send() and Device::dataReceived for transport.
+ * The device must already be connected.
  */
 class SerialBootloaderTarget : public IMemoryTarget
 {
     Q_OBJECT
 
 public:
-    explicit SerialBootloaderTarget(ICommunication *communication,
-                                    QObject *parent = nullptr);
+    explicit SerialBootloaderTarget(Device *device, QObject *parent = nullptr);
     ~SerialBootloaderTarget() override;
 
-    // IMemoryTarget
     MemoryTargetInfo info() const override;
     bool isReady() const override;
 
@@ -37,27 +32,20 @@ public:
     bool write(quint32 address, const QByteArray &data) override;
     QByteArray read(quint32 address, quint32 size) override;
     bool verify(quint32 address, const QByteArray &expected) override;
-
     bool jumpTo(quint32 address) override;
 
-    /**
-     * @brief Query device identity and fill MemoryTargetInfo.
-     * @return true on success
-     */
     bool queryIdentity();
 
 private slots:
-    void onDataReceived(const QByteArray &data);
-
+    void onDeviceDataReceived(const QByteArray &data);
+signals:
+    void responseReceived();
 private:
-    /**
-     * @brief Send a frame and wait for a complete response payload.
-     */
     bool sendCommandAndWait(const QByteArray &frame,
                             QByteArray &responsePayload,
                             int timeoutMs = 2000);
 
-    ICommunication *m_comm = nullptr;
+    Device *m_device = nullptr;
     MemoryTargetInfo m_info;
     bool m_ready = false;
 
