@@ -1,86 +1,135 @@
-cmake_minimum_required(VERSION 3.21)
+find_package(Qt6 REQUIRED COMPONENTS Test)
+project(EDCC VERSION 2.0.0 LANGUAGES CXX)
 
-project(EDCC
-    VERSION 1.7.0
-    DESCRIPTION "Embedded Device Control Center"
-    LANGUAGES CXX
+# ---------------- Protocol / Packet Parser ----------------
+add_executable(test_protocol
+    test_protocol.cpp
+    ${CMAKE_SOURCE_DIR}/src/communication/SimplePacketParser.cpp
+    ${CMAKE_SOURCE_DIR}/src/communication/SimplePacketParser.h
+    ${CMAKE_SOURCE_DIR}/src/core/IPacketParser.h
+    ${CMAKE_SOURCE_DIR}/src/core/IPacketParser.cpp
 )
 
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTORCC ON)
-set(CMAKE_AUTOUIC ON)
-
-find_package(Qt6 REQUIRED COMPONENTS
-    Widgets
-    Network
-    SerialPort
-    Test
-)
-
-add_executable(EDCC
-    src/app/main.cpp
-    src/app/MainWindow.h
-    src/app/MainWindow.cpp
-
-    src/core/Types.h
-    src/core/IDevice.h
-    src/core/ICommunication.h
-    src/core/Device.h
-    src/core/Device.cpp
-    src/core/DeviceManager.h
-    src/core/DeviceManager.cpp
-    src/core/IPacketParser.h
-
-    src/communication/SerialCommunication.h
-    src/communication/SerialCommunication.cpp
-    src/communication/TcpCommunication.h
-    src/communication/TcpCommunication.cpp
-    src/communication/CommunicationWorker.h
-    src/communication/CommunicationWorker.cpp
-    src/communication/SimplePacketParser.h
-    src/communication/SimplePacketParser.cpp
-
-    src/logging/Logger.h
-    src/logging/Logger.cpp
-
-    src/utils/JsonConfig.h
-    src/utils/JsonConfig.cpp
-    src/core/IPacketParser.cpp
-    src/firmware/IMemoryTarget.h
-    src/firmware/FirmwareUpdater.h
-    src/firmware/FirmwareUpdater.cpp
-    src/firmware/DummyMemoryTarget.cpp
-    src/firmware/DummyMemoryTarget.h
-    src/firmware/FirmwareUpdateWorker.h
-    src/firmware/FirmwareUpdateWorker.cpp
-    src/firmware/protocol/BootloaderProtocol.h
-    src/firmware/SerialBootloaderTarget.h
-    src/firmware/SerialBootloaderTarget.cpp
-
-
-
-
-
-)
-
-target_include_directories(EDCC
+target_include_directories(test_protocol
     PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_SOURCE_DIR}/src
 )
 
-target_link_libraries(EDCC
+target_link_libraries(test_protocol
     PRIVATE
-        Qt6::Widgets
-        Qt6::Network
+        Qt6::Test
+        Qt6::Core
+)
+
+add_test(NAME test_protocol COMMAND test_protocol)
+
+# ---------------- JSON Config ----------------
+add_executable(test_jsonconfig
+    test_jsonconfig.cpp
+    ${CMAKE_SOURCE_DIR}/src/utils/JsonConfig.cpp
+    ${CMAKE_SOURCE_DIR}/src/utils/JsonConfig.h
+    ${CMAKE_SOURCE_DIR}/src/core/Types.h
+
+)
+
+target_include_directories(test_jsonconfig
+    PRIVATE
+        ${CMAKE_SOURCE_DIR}/src
+)
+
+target_link_libraries(test_jsonconfig
+    PRIVATE
+        Qt6::Test
+        Qt6::Core
+)
+
+add_test(NAME test_jsonconfig COMMAND test_jsonconfig)
+
+# ---------------- Firmware Updater ----------------
+add_executable(test_firmware
+    test_firmware.cpp
+
+    ${CMAKE_SOURCE_DIR}/src/firmware/FirmwareUpdater.cpp
+    ${CMAKE_SOURCE_DIR}/src/firmware/FirmwareUpdater.h
+    ${CMAKE_SOURCE_DIR}/src/firmware/FirmwareUpdateWorker.cpp
+    ${CMAKE_SOURCE_DIR}/src/firmware/FirmwareUpdateWorker.h
+    ${CMAKE_SOURCE_DIR}/src/firmware/DummyMemoryTarget.cpp
+    ${CMAKE_SOURCE_DIR}/src/firmware/DummyMemoryTarget.h
+    ${CMAKE_SOURCE_DIR}/src/firmware/IMemoryTarget.h
+
+    ${CMAKE_SOURCE_DIR}/src/logging/Logger.cpp
+    ${CMAKE_SOURCE_DIR}/src/logging/Logger.h
+
+
+)
+
+target_include_directories(test_firmware
+    PRIVATE
+        ${CMAKE_SOURCE_DIR}/src
+)
+
+target_link_libraries(test_firmware
+    PRIVATE
+        Qt6::Test
+        Qt6::Core
+)
+
+add_test(NAME test_firmware COMMAND test_firmware)
+
+
+# ---------------- Serial Bootloader Target ----------------
+add_executable(test_serialbootloader
+    test_serialbootloader.cpp
+    MockCommunication.h
+
+    # Firmware
+    ${CMAKE_SOURCE_DIR}/src/firmware/SerialBootloaderTarget.cpp
+    ${CMAKE_SOURCE_DIR}/src/firmware/SerialBootloaderTarget.h
+    ${CMAKE_SOURCE_DIR}/src/firmware/IMemoryTarget.h
+    ${CMAKE_SOURCE_DIR}/src/firmware/protocol/BootloaderProtocol.h
+
+    # Core / Device
+    ${CMAKE_SOURCE_DIR}/src/core/Device.cpp
+    ${CMAKE_SOURCE_DIR}/src/core/Device.h
+    ${CMAKE_SOURCE_DIR}/src/core/DeviceManager.cpp
+    ${CMAKE_SOURCE_DIR}/src/core/DeviceManager.h
+    ${CMAKE_SOURCE_DIR}/src/core/IDevice.h
+    ${CMAKE_SOURCE_DIR}/src/core/ICommunication.h
+    ${CMAKE_SOURCE_DIR}/src/core/Types.h
+    ${CMAKE_SOURCE_DIR}/src/core/IPacketParser.h
+    ${CMAKE_SOURCE_DIR}/src/core/IPacketParser.cpp
+
+    # Communication worker (required by Device)
+    ${CMAKE_SOURCE_DIR}/src/communication/CommunicationWorker.cpp
+    ${CMAKE_SOURCE_DIR}/src/communication/CommunicationWorker.h
+    ${CMAKE_SOURCE_DIR}/src/communication/SerialCommunication.h
+    ${CMAKE_SOURCE_DIR}/src/communication/SerialCommunication.cpp
+    ${CMAKE_SOURCE_DIR}/src/communication/TcpCommunication.h
+    ${CMAKE_SOURCE_DIR}/src/communication/TcpCommunication.cpp
+    ${CMAKE_SOURCE_DIR}/src/communication/SimplePacketParser.cpp
+    ${CMAKE_SOURCE_DIR}/src/communication/SimplePacketParser.h
+
+    # Logging
+    ${CMAKE_SOURCE_DIR}/src/logging/Logger.cpp
+    ${CMAKE_SOURCE_DIR}/src/logging/Logger.h
+
+    # Utils (if DeviceManager uses JsonConfig)
+    ${CMAKE_SOURCE_DIR}/src/utils/JsonConfig.cpp
+    ${CMAKE_SOURCE_DIR}/src/utils/JsonConfig.h
+)
+
+target_include_directories(test_serialbootloader
+    PRIVATE
+        ${CMAKE_SOURCE_DIR}/src
+        ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+target_link_libraries(test_serialbootloader
+    PRIVATE
+        Qt6::Test
+        Qt6::Core
         Qt6::SerialPort
+        Qt6::Network
 )
 
-option(EDCC_BUILD_TESTS "Build unit tests" ON)
-
-if(EDCC_BUILD_TESTS)
-    enable_testing()
-    add_subdirectory(tests)
-endif()
+add_test(NAME test_serialbootloader COMMAND test_serialbootloader)
