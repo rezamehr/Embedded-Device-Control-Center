@@ -4,6 +4,32 @@ All notable changes to **Embedded Device Control Center (EDCC)** are documented 
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [2.0.0] - 2026-08-15
+
+### Added
+- **Firmware Update layer** (`src/firmware/`)
+  - `IMemoryTarget` abstraction for erase / write / read / verify / jump
+  - `FirmwareUpdater` with asynchronous worker thread
+  - `DummyMemoryTarget` for offline testing
+  - `SerialBootloaderTarget` for real device updates over managed `Device`
+- **Bootloader Protocol v1.0**
+  - Frame: `START(0xAA) + LENGTH(1) + PAYLOAD + CHECKSUM(XOR payload)`
+  - Commands: Identity, Read, Erase, Write, Jump, ACK, NACK
+  - Spec: `docs/bootloader_protocol.md`
+- **UI Firmware panel** in MainWindow
+  - Browse `.bin`, start address, progress, start/abort
+- **Unit tests**
+  - `test_firmware` – updater + dummy target
+  - `test_serialbootloader` – protocol target via Device + Mock
+  - Updated `test_protocol` for payload-only checksum
+
+### Changed
+- `SimplePacketParser` checksum now matches protocol v1.0 (XOR of payload only)
+- `MockCommunication` emits `stateChanged(Connected/Disconnected)` for realistic Device tests
+
+### Notes
+- Host update sequence: Identity → Erase → Write chunks → Verify → Jump
+- Device must be connected and in bootloader mode before starting update
 ---
 
 ## [1.5.0] - 2026-08-09
