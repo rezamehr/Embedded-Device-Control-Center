@@ -46,7 +46,7 @@ It provides multi-device management over **Serial** and **TCP**, real-time loggi
 |---------|----------|--------|
 | **v1.0** | Device Manager, Serial, TCP, Logger, JSON Config | ✅ Released |
 | **v1.5** | Multi-threaded Communication, Packet Parser, Tests | ✅ Released |
-| **v2.0** | Firmware Updater (Bootloader support) | Planned |
+| **v2.0** | Firmware Updater (Bootloader support) | ✅ Released |
 | **v3.0** | Real-time Charts, Alarm System | Planned |
 | **v4.0** | Plugin Architecture, MQTT, CAN | Planned |
 
