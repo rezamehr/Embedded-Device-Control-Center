@@ -91,6 +91,12 @@ Full specification, command list, and request/response examples:
 
 Protocol details: [Bootloader Protocol v1.0](docs/bootloader_protocol.md)
 
+## Related Projects
+
+- **MCU Bootloader:**  
+  [EDCC Bootloader – STM32H7](https://github.com/rezamehr/Embedded-Device-Bootloader-STM32H7)  
+  Custom bootloader implementing the EDCC Bootloader Protocol v1.0 for STM32H7 series.
+
 ## Build Instructions
 
 ```bash
